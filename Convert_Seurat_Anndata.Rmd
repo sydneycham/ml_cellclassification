@@ -1,0 +1,129 @@
+---
+title: "convert_Calabuig_data_from_rds_to_h5ad"
+output: html_document
+date: "2024-11-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+```{r}
+library(Seurat)
+library(SeuratDisk)
+```
+# Set working directory and output directory
+#setwd(file.path("/Users/ashforda/Desktop/Pathways + Omics/precepts/vanGalen_data/"))
+
+# Specify the path to your .rds file
+#seurat_file_path <- "seurat_main_cohort.rds"
+```{r}
+seurat_file_path <- "seurat_smartseq_A10-12.rds"
+```
+
+
+# Verify the file path
+seurat_file_path <- "seurat_main_cohort.rds"
+if (!file.exists(seurat_file_path)) {
+  stop("File does not exist at the specified path.")
+}
+
+
+# Read the Seurat object from the .rds file
+seurat_object <- readRDS(file = seurat_file_path)
+
+# Print basic information about the Seurat object
+print(seurat_object)
+
+# View the metadata associated with the cells
+#head(seurat_object@meta.data$MutTranscripts)
+
+# Increase the max.print option to a large number to view more lines
+options(max.print = 10000)
+print(seurat_object@meta.data$MutTranscripts)
+#print(seurat_object@assays$RNA@layers$counts)
+#print(seurat_object@active.assay)
+
+#seurat_object@assays$RNA@data
+
+
+# Assuming you already have a Seurat object created
+# seurat_object <- CreateSeuratObject(...)
+```{r}
+# Van Galen
+
+VG_seurat_object <- readRDS(file = "/Users/hamiltsy/Documents/GitLab/Mutation/Van_Galen/Seurat_AML.rds")
+
+```
+
+```{r}
+filtered_matrix_path = "/Users/hamiltsy/Documents/GitLab/Mutation/Citeseq_data/filtered_feature_bc_matrix/"
+
+cellranger_data <- Read10X(data.dir = filtered_matrix_path)
+
+K22_P1_seurat_obj <- CreateSeuratObject(counts = cellranger_data$`Gene Expression` , project = "K22")
+```
+
+
+# Set raw counts in the Seurat object (if not already set)
+#seurat_object[["RNA"]] <- as(object = seurat_object[["RNA"]], Class = "Assay")
+#seurat_object <- SetAssayData(object = seurat_object, slot = "layers", new.data = GetAssayData(seurat_object, layer = "counts", assay = "RNA"))
+
+```{r}
+K22_P1_seurat_obj <- SetAssayData(object = K22_P1_seurat_obj, layer = "counts", new.data = K22_P1_seurat_obj@assays$RNA@counts)
+K22_P1_seurat_obj[["RNA"]] <- as(object = K22_P1_seurat_obj[["RNA"]], Class = "Assay")
+```
+
+
+# Check if counts are stored in the layers slot and move them to counts slot if necessary
+if (!is.null(seurat_object@assays$RNA@counts)) {
+  seurat_object@assays$RNA@counts <- seurat_object@assays$RNA@counts
+}
+
+# Save the Seurat object as an H5Seurat file
+#SaveH5Seurat(seurat_object, filename = "Calabuig_AML.h5Seurat")
+```{r}
+SaveH5Seurat(K22_P1_seurat_obj, filename = "K22_P1_seurat_obj_final.h5Seurat")
+```
+
+# Convert the H5Seurat file to an H5AD file
+#Convert("Calabuig_AML.h5Seurat", dest = "h5ad", overwrite = TRUE)
+
+```{r}
+Convert("K22_P1_seurat_obj_final.h5Seurat", dest = "h5ad", overwrite = TRUE)
+```
+
+# Optional: Clean up intermediate files if needed
+#file.remove("Calabuig_AML.h5Seurat")
+
+```{r}
+file.remove("K22_P1_seurat_obj_final.h5Seurat")
+```
+
+
+
+
+
